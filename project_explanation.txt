@@ -1,0 +1,72 @@
+PROJECT VELVETRA - COMPREHENSIVE EXPLANATION GUIDE
+====================================================
+
+This document explains the architecture and flow of the Velvetra project. It is specifically designed to help you answer questions about how Django (the backend) and React (the frontend) work together in this application.
+
+1. PROJECT STRUCTURE
+--------------------
+The project is divided into two main parts:
+- **Frontend (React/Vite)**: Located in the root `velvetra/` folder (`src/`). It handles the user interface.
+- **Backend (Django)**: Located inside the `velvetra1/` folder. It provides the API and database.
+  - `velvetra1/velvetra1/` is the core project settings folder.
+  - `velvetra1/velvetra2/` is the specific Django app handling Designers and Projects.
+
+2. HOW THE WEBSITE WORKS (THE DATA FLOW)
+----------------------------------------
+When a user interacts with the website, here is exactly what happens path-by-path:
+
+### STEP 1: Registering a New Designer (POST /api/designers/)
+When an Admin fills out the Step 1 form and clicks "Register":
+1. The React frontend calls `fetchApi('/designers/', { method: 'POST' })` in `src/pages/AddDesigner.jsx`.
+2. Django's `DesignerViewSet` validates the data and saves it to `db.sqlite3`.
+3. The server returns the new Designer's **UUID** (Unique ID) and name.
+4. React then navigates to Step 2, passing the `designerId` and `designerName` in the URL.
+
+### STEP 2: Creating a Design Project (POST /api/projects/)
+In the Design Section page:
+1. React retrieves the `designerId` from the URL to ensure the project is linked to the right person.
+2. If images are uploaded, they go to `/api/core/upload/`. Django saves them in the `media/` folder and returns URLs.
+3. If "Generate AI Design" is used, Django calls the **Replicate API** (using Stable Diffusion XL) to create a real unique design.
+4. When "Save & Continue" is clicked, React sends the project details and image list to `/api/projects/`.
+5. Django saves the project and returns the new Project ID. React then navigates to Step 3.
+
+### STEP 3: Managing and Finalizing (PATCH /api/projects/id/)
+In the Manage Designs page:
+1. The admin can add more designs or remove existing ones.
+2. Clicking "Finalize" allows the admin to "Approve for Development".
+3. This sends a `PATCH` request to Django to update the project status to `completed` and set `final_approved` to `True`.
+4. The project now appears in the main **Projects** list with a green "Approved" badge.
+
+3. KEY DJANGO CONCEPTS TO EXPLAIN TO YOUR TEACHER
+-------------------------------------------------
+
+* **What is DRF (Django REST Framework)?**
+  DRF is a toolkit that sits on top of Django. We use it to easily convert our database records into JSON (serialization) so React can read them.
+
+* **What are Serializers (`velvetra2/serializers.py`)?**
+  Serializers act as translators. They convert JSON data into Python objects for the database and vice versa.
+
+* **What are ViewSets (`velvetra2/views.py`)?**
+  ViewSets automatically provide standard operations like List, Create, and Update based on the model.
+
+* **How are Static/Media files handled?**
+  - **Static**: The React-built JavaScript and CSS are served by Django.
+  - **Media**: User-uploaded images are stored in the `media/` folder.
+
+4. SERVER MANAGEMENT COMMANDS
+-----------------------------
+To keep your backend running and healthy, use these steps in your terminal:
+
+1. **Install Dependencies**:
+   `pip install django djangorestframework django-cors-headers replicate`
+
+2. **Apply Database Changes (if you change models.py)**:
+   `python manage.py makemigrations`
+   `python manage.py migrate`
+
+3. **Start the Server**:
+   `python manage.py runserver`
+
+4. **Add AI Generation Support**:
+   Set your API key so AI generation works:
+   `setx REPLICATE_API_TOKEN "your_token_here"` (Restart terminal after running).
